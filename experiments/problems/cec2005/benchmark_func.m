@@ -299,8 +299,10 @@ if initial_flag==0
          o=-5+10*rand(1,D);
     end
     c=2;
-    if D==2,load rastrigin_M_D2,,
+    if D==2,load rastrigin_M_D2,
+    elseif D==5,load rastrigin_M_D5,
     elseif D==10,load rastrigin_M_D10,
+    elseif D==20,load rastrigin_M_D20,
     elseif D==30,load rastrigin_M_D30,
     elseif D==50,load rastrigin_M_D50,
     else 

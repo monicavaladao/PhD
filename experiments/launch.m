@@ -1,4 +1,4 @@
-function [] = launch(problem, metamodel, rep)
+function [] = launch(problem, metamodel, rep, filename)
 
 % Get problem data
 n = problem.n;
@@ -23,15 +23,14 @@ if ~exist('results', 'dir')
     mkdir('results');
 end
 
-filename = sprintf('.results/%s-%s-%02d-%02d.csv', metamode.name, problem.name, n, rep);
 fid = fopen(filename, 'w+');
 fprintf(fid, 'METAMODEL,PROB,NVAR,REP,NEVAL,ITER,BEST.OBJ,MEAN.DIFF,METAMODEL.TIME.S,TOTAL.TIME.S\n');
 
 history = info.history;
 for i = 1:length(history.iterations)
     fprintf(fid, '"%s","%s",%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f\n', ...
-        metamodel.name, problem.name, n, history.iterations(i), ...
-        history.best_y(i), history.mean_diff(i), ...
+        metamodel.name, problem.name, n, rep, history.neval(i), ...
+        history.iterations(i), history.best_y(i), history.mean_diff(i), ...
         history.metamodel_runtime(i), history.saea_runtime(i));
 end
 

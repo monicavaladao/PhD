@@ -4,12 +4,17 @@
 %close all;
 
 % Add problem functions to the path
-addpath('./problems');
-addpath('./problems/analytic_functions');
-addpath('./problems/cec2005');
+addpath('../experiments/problems');
+addpath('../experiments/problems/analytic_functions');
+addpath('../experiments/problems/cec2005');
 
 % Load problem data
-problem = load_problem('rosen', 2);
+%problem = load_problem('rosen', 2);
+%problem = load_problem('rosen', 5);
+%problem = load_problem('elipsoid', 2);
+%problem = load_problem('elipsoid', 5);
+%problem = load_problem('ackley', 2);
+problem = load_problem('ackley', 5);
 %problem = load_problem('shifted-rotated-rastrigin', 2);
 %problem = load_problem('shifted-rotated-rastrigin', 5);
 
@@ -34,7 +39,7 @@ y = feval_all(fobj, X);
 fprintf('\n\n')
 fprintf('Best solution:\n');
 fprintf('y = %.5f\n', best_y);
-fprintf('x = ', best_x);
+fprintf('x = ');
 fprintf('%.5f ', best_x);
 fprintf('\n');
 fprintf('\n');

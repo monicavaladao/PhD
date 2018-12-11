@@ -58,6 +58,7 @@ info.history.saea_runtime = [0];
 
 % Select the initial population
 [pop_X, pop_y] = select_initial_population(X, y, N);
+idx_best = 1;
 
 % Logging
 if params.verbose
@@ -73,9 +74,12 @@ eval_counter = info.neval;
 iter_counter = 1;
 
 while eval_counter < params.max_eval
-     
+    
+    % Find the best solution in pop_X
+    best_x = pop_X(idx_best, :);
+    
     % Create offspring solutions using DE/best/1 operators
-    P = create_offsprings_de_best(pop_X, info.best_x, lb, ub, params.offsprings_per_solution);
+    P = create_offsprings_de_best(pop_X, best_x, lb, ub, params.offsprings_per_solution);
     
     % Select a sample to build/update the metamodel
     [sample_X, sample_y] = choose_metamodel_sample(info.pool, params.sample_size, params.tol_std);
@@ -108,7 +112,7 @@ while eval_counter < params.max_eval
         chosen_y = feval_all(problem.fobj, chosen_X);
         
         % Choose the popoutaion of the next iteration
-        [pop_X, pop_y, ~] = select_population(pop_X, pop_y, chosen_X, chosen_y);
+        [pop_X, pop_y, idx_best] = select_population(pop_X, pop_y, chosen_X, chosen_y);
         
     end
     
@@ -136,9 +140,14 @@ while eval_counter < params.max_eval
     
     % Logging
     if params.verbose
-        fprintf('% 11d | % 14.5f | % 9d | % 14.5f | % 14.5f \n', iter_counter, ...
-            info.best_y, info.neval, mean(abs(chosen_pred - chosen_y)), ...
-            (cputime - t0_start));
+        if info.history.best_y(end) < info.history.best_y(end-1)
+            flag = '*';
+        else
+            flag = '';
+        end
+        fprintf('%1s% 10d | % 14.5f | % 9d | % 14.5f | % 14.5f \n', ...
+            flag, iter_counter, info.best_y, info.neval, ...
+            mean(abs(chosen_pred - chosen_y)), (cputime - t0_start));
     end
     
     % Update iteration counter
