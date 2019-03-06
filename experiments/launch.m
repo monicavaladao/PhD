@@ -10,7 +10,7 @@ neval = problem.neval;
 
 % Create initial sample
 rng(rep, 'twister');
-ssize = 4 * npop;
+ssize = 5 * npop;
 X = lhsdesign(ssize, n);
 X = repmat(lb, ssize, 1) + repmat(ub - lb, ssize, 1) .* X;
 y = feval_all(fobj, X);

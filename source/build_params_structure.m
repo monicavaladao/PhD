@@ -82,10 +82,13 @@ switch n
         params.sample_size = 70; 
     case 10
         params.pop_size = 20;
-        params.sample_size = 70; 
+        params.sample_size = 70;
+    case 15
+        params.pop_size = 50;
+        params.sample_size = 150;
     otherwise
         params.pop_size = 50;
-        params.sample_size = 100;
+        params.sample_size = 240;
 end
 
 if init_sample_size < params.sample_size

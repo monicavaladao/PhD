@@ -55,7 +55,7 @@ info.neval = params.init_sample_size;
 
 % Pool of solutions
 info.pool.next_age = 2;
-if params.max_pool_size < params.init_sample_size;
+if params.max_pool_size < params.init_sample_size
     [~,idx] = sort(y,'ascend');
     info.pool.X = X(idx(1:info.params.max_pool_size),:);
     info.pool.y = y(idx(1:info.params.max_pool_size));
