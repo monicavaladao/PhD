@@ -23,7 +23,7 @@ function [info] = build_info_structure(X, y, problem, params)
 %       Values: 'Gaussian', 'GaussianCrossValidation', 'Multiquadric'.
 %
 % Output:
-%   history: A structure with fields that keep the settings used by the SAEA
+%   info: A structure with fields that keep the settings used by the SAEA
 %       (including toolboxes), and fields that keep the evolution of the 
 %       algorithm.
 

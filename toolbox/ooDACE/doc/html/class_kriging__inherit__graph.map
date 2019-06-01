@@ -1,0 +1,4 @@
+<map id="Kriging" name="Kriging">
+<area shape="rect" id="node5" href="$class_blind_kriging.html" title="A blind kriging surrogate model." alt="" coords="39,155,135,181"/>
+<area shape="rect" id="node2" href="$class_basic_gaussian_process.html" title="A kriging surrogate model (also known as a Gaussian Process)" alt="" coords="5,5,168,32"/>
+</map>

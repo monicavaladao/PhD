@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$class_optimizer.html" title="Abstract base class for an optimizer." alt="" coords="6,56,90,83"/>
+<area shape="rect" id="node3" href="$class_matlab_g_a.html" title="Wrapper around the matlab optimizers." alt="" coords="165,5,249,32"/>
+<area shape="rect" id="node5" href="$class_matlab_optimizer.html" title="Wrapper around the matlab optimizers." alt="" coords="143,56,270,83"/>
+<area shape="rect" id="node7" href="$class_s_q_p_lab_optimizer.html" title="Wrapper around the SQPLab optimization package." alt="" coords="139,107,274,133"/>
+</map>

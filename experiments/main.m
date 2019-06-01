@@ -15,7 +15,6 @@ addpath(genpath('../source'));
 % Add problem functions to the path
 addpath('./problems');
 addpath('./problems/analytic_functions');
-addpath('./problems/cec2005');
 
 
 % -------------------------------------------------------------------------

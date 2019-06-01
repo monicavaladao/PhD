@@ -45,13 +45,6 @@ switch name
 		problem.name = 'Griewank Function';
 		problem.lb = repmat(-600, 1, problem.n);
 		problem.ub = repmat(600, 1, problem.n);	
-		
-	case 'shifted-rotated-rastrigin'
-		problem.fobj = @shifted_rotated_rastrigin;
-		problem.n = n;
-		problem.name = 'Shifted Rotated Rastrigin';
-		problem.lb = repmat(-5, 1, problem.n);
-		problem.ub = repmat(5, 1, problem.n);
         
     case 'levy'
 		problem.fobj = @levy;

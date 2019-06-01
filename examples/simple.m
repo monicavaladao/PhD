@@ -1,24 +1,22 @@
 % Clear all data
-%clc
-%clear all;
-%close all;
+clc
+clear all;
+close all;
+
+% Configure the MATLAB path to include all folders 
+% used by this toolbox. To do this execute "setup.m" in source
 
 % Add problem functions to the path
 addpath('../experiments/problems');
 addpath('../experiments/problems/analytic_functions');
-addpath('../experiments/problems/cec2005');
 
 % Load problem data
 %problem = load_problem('rosen', 2);
 %problem = load_problem('rosen', 5);
 %problem = load_problem('elipsoid', 2);
 %problem = load_problem('elipsoid', 5);
-%problem = load_problem('ackley', 2);
+problem = load_problem('ackley', 2);
 %problem = load_problem('ackley', 5);
-%problem = load_problem('shifted-rotated-rastrigin', 2);
-%problem = load_problem('shifted-rotated-rastrigin', 5);
-%problem = load_problem('schwefel', 5);
-problem = load_problem('trid', 10);
 
 fobj = problem.fobj;
 lb = problem.lb;
@@ -38,8 +36,8 @@ y = feval_all(fobj, X);
 
 % Solve the problem
 % [best_x, best_y, info] = surrogate_saea(fobj, X, y, lb, ub, max_eval);
-%[best_x, best_y, info] = surrogate_saea(fobj, X, y, lb, ub, max_eval, 'Metamodel', 'OrdinaryKriging_ooDACE');
-[best_x, best_y, info] = surrogate_saea(fobj, X, y, lb, ub, max_eval, 'Metamodel', 'UniversalKriging2_ooDACE');
+[best_x, best_y, info] = surrogate_saea(fobj, X, y, lb, ub, max_eval, 'Metamodel', 'OrdinaryKriging_ooDACE');
+%[best_x, best_y, info] = surrogate_saea(fobj, X, y, lb, ub, max_eval, 'Metamodel', 'UniversalKriging2_ooDACE');
 
 % Print results
 fprintf('\n\n')

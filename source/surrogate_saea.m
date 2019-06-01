@@ -28,8 +28,34 @@ function [best_x, best_y, info] = surrogate_saea(fobj, X, y, lb, ub, max_eval, v
 %   info: A structure with additional information.
 %
 % References:
-% [1] xxx
-
+% [1] Regis, R.G., Shoemaker, C.A.: Local function approximation in 
+% evolutionary algorithms for the optimization of costly functions. 
+% IEEE Transactions on Evolutionary Computing 8(5), 490–505 (2004)
+% [2] Büche, D., Scharaudolph, N.N., Koumountsakos, P.: Accelerating
+% evolutionary algorithms with Gaussian process fitness function models. 
+% IEEE Transactions on Systems Man and Cybernetics, Part C (Applications 
+% and Reviews) 35(2), 183–194 (2005)
+% [3] Emmerich, M.T.M., Giannakoglou, K.C., Naujoks, B.: Single- and 
+% multiobjective evolutionary optimization assisted by Gaussian random 
+% field metamodels. IEEE Transactions on Evolutionary Computation 10(4), 421–439 (2006)
+% [4] Zhou, Z., Ong, Y.S., Nair, P.B., Keane, A.J., Lum, K.Y.: Combining 
+% global and local surrogate models to accelerate evolutionary optimization.
+% IEEE Transactions on Systems Man and Cybernetics, Part C (Applications 
+% and Reviews) 37(1), 66–76 (2007)
+% [5] Liu, B., Zhang, Q., Gielen, G.G.E.: A Gaussian process surrogate model
+% assisted evolutionary algorithm for medium scale expensive optimization 
+% problems. IEEE Transactions on Evolutionary Computation 18(2), 180–192 (2014)
+% [6] Viana, F.A.C.: SURROGATES Toolbox User’s Guide, version 2.1 edn. 
+% (2010). URL http://sites.google.com/site/felipeacviana/surrogatestoolbox
+% [7] Schonlau, M.: Computer experiments and global optimization. Ph.D. 
+% thesis, University of Waterloo (1997)
+% [8] Forrester, A.I.J., Sóbester, A., Keane, A.J.: Engineering Design via 
+% Surrogate Modelling: A Practical Guide. John Wiley & Sons (2008)
+% [9] Zhao, L., Choi, K.K., Lee, I.: Metamodeling method using dynamic
+% kriging for design optimization. AIAA Journal 49(9), 2034–2046 (2011)
+% [10] 4. Couckuyt, I., Forrester, A., Gorissen, D., Turck, F.D., Dhaene, 
+% T.: Blind kriging: Implementation and performance analysis. Advances in 
+% Engineering Software 49, 1–13 (2012)
 
 % Start timer
 t0_start = cputime;

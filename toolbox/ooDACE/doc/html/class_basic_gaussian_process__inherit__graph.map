@@ -1,0 +1,5 @@
+<map id="BasicGaussianProcess" name="BasicGaussianProcess">
+<area shape="rect" id="node3" href="$class_co_kriging.html" title="A cokriging surrogate model." alt="" coords="4,80,85,107"/>
+<area shape="rect" id="node5" href="$class_kriging.html" title="A kriging surrogate model." alt="" coords="111,80,176,107"/>
+<area shape="rect" id="node7" href="$class_blind_kriging.html" title="A blind kriging surrogate model." alt="" coords="96,155,192,181"/>
+</map>

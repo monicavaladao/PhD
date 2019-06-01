@@ -31,6 +31,13 @@ suppressMessages(library(xtable))
 # Read data file
 data.results <- read.csv("./data/metamodels.csv", header = TRUE)
 
+# Remove repeated and problems and umbalanced data
+data.results <- data.results %>%
+  dplyr::filter(!(PROB %in% c('schwefel', 'trid', 'sumsqu'))) %>%
+  dplyr::filter(!(PROB == 'zakharov' & NVAR == 20 & REP == 4))
+
+data.results$PROB <- factor(data.results$PROB, unique(data.results$PROB))
+
 # Change metamodel names
 metamodel.factors <- list(OK  = "ordinary-kriging",
                           UK1 = "universal-kriging1", 
@@ -45,12 +52,6 @@ data.results <- data.results %>%
   dplyr::group_by(PROB, NVAR, METAMODEL, REP) %>%
   dplyr::mutate(IMPROV.OBJ = 100 * ((max(BEST.OBJ) - BEST.OBJ) / max(BEST.OBJ))) %>%
   dplyr::ungroup()
-
-# Remove repeated and problems with error
-data.results <- data.results %>%
-  dplyr::filter(!(PROB %in% c('schwefel', 'trid', 'sumsqu')))
-
-data.results$PROB <- factor(data.results$PROB, unique(data.results$PROB))
 
 
 # ===========================================================================

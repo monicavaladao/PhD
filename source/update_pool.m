@@ -1,5 +1,13 @@
 function [pool] = update_pool(pop_X, chosen_X, chosen_y, pool, params)
-% UPDADE_POOL: Upadate the pool of solutions.
+% UPDADE_POOL: Upadate the pool of solutions evaluated on original function.
+% Input:
+%   pop_X: Current population
+%   chosen_X: New solutions
+%   chosen_y: Evaluate of each row in chosen_X
+%   pool: Current pool of solutions
+%   params: Structure containing ooDACE and SRGTSToolbox parameters.
+% Output:
+%   pool: Updated pool
 
 [N_pool, n] = size(pool.X);
 [N_pop, ~] = size(pop_X);
@@ -17,7 +25,7 @@ chosen_y = chosen_y(idx);
 
 % Try to insert solutions in chosen_X into pool
 has_pool_changed = 0;
-for i = N_chosen
+for i = 1:N_chosen
     
     % Distance between chosen_X(i,:) and all solutions in pool
     [d, idx] = min(sqrt(sum((repmat(chosen_X(i,:), N_pool, 1) - pool.X) .^ 2, 2)));

@@ -1,18 +1,19 @@
 function [exp_improv,y] = expimp_ooDACE(x,info)
-% EXPIMP_OODACE: Adapt "expimp" frunction from Alexander Forrester [1] to
+% EXPIMP_OODACE: Adapt "expimp" function from Alexander Forrester [1] to
 % calculate the expected improvement using the metamodel built with ooDACE
 % Toolbox.
 %
 % Input:
-%   x:
-%   info:
+%   x: vetor of design variables
+%   info: Structure with all information used by the metamodel
 %
 % Output:
-%   exp_improv:
-%   y:
+%   exp_improv: Scalar Expected Improvement
+%   y: Scalar Kriging prediction
 %
 % References:
-%   [1] FORESTER, Alexander. .....
+%   [1] Forrester, A.I.J., Sóbester, A., Keane, A.J.: Engineering Design
+%   via Surrogate Modelling: A Practical Guide. John Wiley & Sons (2008)
 
 
 % Get metamodel info
@@ -23,8 +24,8 @@ y = info.EvalSample;
 y_min = min(y);
 
 % Prediction and MSE
-[y, dy, mse, dmse] = predictor(x, info.ooDACE);
-y_hat = y;
+[y_hat, dy, mse, dmse] = predictor(x, info.ooDACE);
+
 
 % Expected Improvement
 if mse == 0

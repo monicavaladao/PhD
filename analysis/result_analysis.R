@@ -42,6 +42,13 @@ suppressMessages(library(PMCMR))
 # Read data file
 data.results <- read.csv("./data/metamodels.csv", header = TRUE)
 
+# Remove repeated and problems and umbalanced data
+data.results <- data.results %>%
+  dplyr::filter(!(PROB %in% c('schwefel', 'trid', 'sumsqu'))) %>%
+  dplyr::filter(!(PROB == 'zakharov' & NVAR == 20 & REP == 4))
+
+data.results$PROB <- factor(data.results$PROB, unique(data.results$PROB))
+
 # Change metamodel names
 metamodel.factors <- list(OK  = "ordinary-kriging",
                           UK1 = "universal-kriging1", 
@@ -56,12 +63,6 @@ data.results <- data.results %>%
   dplyr::group_by(PROB, NVAR, METAMODEL, REP) %>%
   dplyr::mutate(IMPROV.OBJ = 100 * ((max(BEST.OBJ) - BEST.OBJ) / max(BEST.OBJ))) %>%
   dplyr::ungroup()
-
-# Remove repeated and problems with error
-data.results <- data.results %>%
-  dplyr::filter(!(PROB %in% c('schwefel', 'trid', 'sumsqu')))
-
-data.results$PROB <- factor(data.results$PROB, unique(data.results$PROB))
 
 
 # ==============================================================================
@@ -96,7 +97,7 @@ for (prob in unique(aggdata$PROB)) {
     fig <- ggplot2::ggplot(subset(subset(aggdata, PROB==prob), NVAR==nvar), 
                            ggplot2::aes(x=GROUP, y=IMPROV.OBJ, fill=METAMODEL)) +
       ggplot2::geom_boxplot() + 
-      ggplot2::xlab("Function evalutions (%)") +
+      ggplot2::xlab("Function evalutions ") +
       ggplot2::ylab("Improv. over the best initial solution (%)") +
       ggplot2::scale_x_discrete(limits = c("25%", "50%", "75%", "100%")) +
       ggplot2::scale_fill_discrete(name = "Metamodel: ") +
@@ -157,12 +158,13 @@ ggplot2::ggsave(filename, plot=fig, width=10, height=7)
 
 
 # ==============================================================================
-# Paired t-test (Bonferroni-corrected)
+# ANOVA and Tukey's test
 
 # Pre-process data
 aggdata <- data.results %>%
   
   # Normalized metamodel building time
+  dplyr::mutate(PROB.NVAR = paste(PROB, '_', NVAR, sep = '')) %>%
   dplyr::group_by(PROB, NVAR, REP, METAMODEL) %>%
   dplyr::mutate(BUILD.TIME = mean(METAMODEL.TIME.S)) %>%
   dplyr::group_by(PROB, NVAR, REP) %>%
@@ -172,75 +174,22 @@ aggdata <- data.results %>%
   dplyr::group_by(PROB, NVAR, REP, METAMODEL) %>%
   dplyr::filter(ITER == max(ITER))
 
-# Significance level (Bonferroni-corrected)
-metamodels <- unique(aggdata$METAMODEL)
-n.tests <- (length(metamodels) * (length(metamodels) - 1)) / 2
-alpha <- 0.05 / n.tests
+# ------------------------------------------------------------------------------
+# Percentage improvement
 
-# Initialize structures to save results
-results.improv <- data.frame(COMPARISON = character(0), 
-                             ESTIMATE = numeric(),
-                             CI.LB = numeric(),
-                             CI.UB = numeric(),
-                             P.VALUE = numeric(),
-                             stringsAsFactors = FALSE)
+# ANOVA
+fit.data <- aov(IMPROV.OBJ ~ METAMODEL + PROB.NVAR, data = aggdata)
+anova(fit.data)
 
-results.time <- data.frame(COMPARISON = character(0), 
-                           ESTIMATE = numeric(),
-                           CI.LB = numeric(),
-                           CI.UB = numeric(),
-                           P.VALUE = numeric(),
-                           stringsAsFactors = FALSE)
-
-idx <- 1
-for (idx1 in c(1:(length(metamodels)-1))) {
-  for (idx2 in c((idx1 + 1):length(metamodels))) {
-    
-    mm1 <- metamodels[idx1]
-    data.mm1 <- dplyr::filter(aggdata, METAMODEL == mm1)
-    
-    mm2 <- metamodels[idx2]
-    data.mm2 <- dplyr::filter(aggdata, METAMODEL == mm2)
-    
-    # Improvement
-    resp <- t.test(data.mm1$IMPROV.OBJ, data.mm2$IMPROV.OBJ,
-                   alternative = "two.sided",
-                   mu = 0,
-                   paired = TRUE, 
-                   var.equal = FALSE,
-                   conf.level = 1.0 - alpha)
-    
-    comparison <- paste(mm1, "vs", mm2)
-    p.value <- resp$p.value
-    estimate <- resp$estimate
-    ci.lb <- resp$conf.int[1]
-    ci.ub <- resp$conf.int[2]
-    
-    results.improv[idx,] <- list(comparison, estimate, ci.lb, ci.ub, p.value)
-    
-    # Building time
-    resp <- t.test(data.mm1$NORM.TIME, data.mm2$NORM.TIME,
-                   alternative = "two.sided",
-                   mu = 0,
-                   paired = TRUE,
-                   var.equal = FALSE,
-                   conf.level = 1.0 - alpha)
-    
-    comparison <- paste(mm1, "vs", mm2)
-    p.value <- resp$p.value
-    estimate <- resp$estimate
-    ci.lb <- resp$conf.int[1]
-    ci.ub <- resp$conf.int[2]
-    
-    results.time[idx,] <- list(comparison, estimate, ci.lb, ci.ub, p.value)
-    
-    # Increment counter
-    idx <- idx + 1
-  }
-}
+# Tukey Honestly Significant Differences (multiple comparisons)
+tukey.result <- TukeyHSD(fit.data, which = c('METAMODEL'), conf.level = 0.95)
 
 # Plot of confidence intervals (improvement)
-results.improv$COMPARISON <- as.factor(results.improv$COMPARISON)
+results.improv <- data.frame(COMPARISON = row.names(tukey.result$METAMODEL),
+                             ESTIMATE   = tukey.result$METAMODEL[, 'diff'], 
+                             CI.LB      = tukey.result$METAMODEL[, 'lwr'], 
+                             CI.UB      = tukey.result$METAMODEL[, 'upr'])
+
 fig <- ggplot2::ggplot(results.improv, 
                        ggplot2::aes(x = COMPARISON, y = ESTIMATE, ymin = CI.LB, ymax = CI.UB)) +
   ggplot2::geom_hline(yintercept = 0, size = 1.3, col = 2, linetype = 2) +
@@ -256,8 +205,22 @@ fig <- ggplot2::ggplot(results.improv,
 filename = "./figures/ci-improv.pdf"
 ggplot2::ggsave(filename, plot=fig, width=10, height=7)
 
-# Plot (time)
-results.time$COMPARISON <- as.factor(results.time$COMPARISON)
+# ------------------------------------------------------------------------------
+# Metamodel building time (normalized)
+
+# ANOVA
+fit.data <- aov(NORM.TIME ~ METAMODEL + PROB.NVAR, data = aggdata)
+anova(fit.data)
+
+# Tukey Honestly Significant Differences (multiple comparisons)
+tukey.result <- TukeyHSD(fit.data, conf.level = 0.95)
+
+# Plot of confidence intervals (improvement)
+results.time <- data.frame(COMPARISON = row.names(tukey.result$METAMODEL),
+                           ESTIMATE   = tukey.result$METAMODEL[, 'diff'], 
+                           CI.LB      = tukey.result$METAMODEL[, 'lwr'], 
+                           CI.UB      = tukey.result$METAMODEL[, 'upr'])
+
 fig <- ggplot2::ggplot(results.time, 
                        ggplot2::aes(x = COMPARISON, y = ESTIMATE, ymin = CI.LB, ymax = CI.UB)) +
   ggplot2::geom_hline(yintercept = 0, size = 1.3, col = 2, linetype = 2) +
@@ -274,6 +237,124 @@ filename = "./figures/ci-time.pdf"
 ggplot2::ggsave(filename, plot=fig, width=10, height=7)
 
 
+# # ==============================================================================
+# # Paired t-test (Bonferroni-corrected)
+# 
+# # Pre-process data
+# aggdata <- data.results %>%
+#   
+#   # Normalized metamodel building time
+#   dplyr::group_by(PROB, NVAR, REP, METAMODEL) %>%
+#   dplyr::mutate(BUILD.TIME = mean(METAMODEL.TIME.S)) %>%
+#   dplyr::group_by(PROB, NVAR, REP) %>%
+#   dplyr::mutate(NORM.TIME = BUILD.TIME / max(BUILD.TIME)) %>%
+#   
+#   # Keep data from the last iteration
+#   dplyr::group_by(PROB, NVAR, REP, METAMODEL) %>%
+#   dplyr::filter(ITER == max(ITER))
+# 
+# # Significance level (Bonferroni-corrected)
+# metamodels <- unique(aggdata$METAMODEL)
+# n.tests <- (length(metamodels) * (length(metamodels) - 1)) / 2
+# alpha <- 0.05 / n.tests
+# 
+# # Initialize structures to save results
+# results.improv <- data.frame(COMPARISON = character(0), 
+#                              ESTIMATE = numeric(),
+#                              CI.LB = numeric(),
+#                              CI.UB = numeric(),
+#                              P.VALUE = numeric(),
+#                              stringsAsFactors = FALSE)
+# 
+# results.time <- data.frame(COMPARISON = character(0), 
+#                            ESTIMATE = numeric(),
+#                            CI.LB = numeric(),
+#                            CI.UB = numeric(),
+#                            P.VALUE = numeric(),
+#                            stringsAsFactors = FALSE)
+# 
+# idx <- 1
+# for (idx1 in c(1:(length(metamodels)-1))) {
+#   for (idx2 in c((idx1 + 1):length(metamodels))) {
+#     
+#     mm1 <- metamodels[idx1]
+#     data.mm1 <- dplyr::filter(aggdata, METAMODEL == mm1)
+#     
+#     mm2 <- metamodels[idx2]
+#     data.mm2 <- dplyr::filter(aggdata, METAMODEL == mm2)
+#     
+#     # Improvement
+#     resp <- t.test(data.mm1$IMPROV.OBJ, data.mm2$IMPROV.OBJ,
+#                    alternative = "two.sided",
+#                    mu = 0,
+#                    paired = TRUE, 
+#                    var.equal = FALSE,
+#                    conf.level = 1.0 - alpha)
+#     
+#     comparison <- paste(mm1, "vs", mm2)
+#     p.value <- resp$p.value
+#     estimate <- resp$estimate
+#     ci.lb <- resp$conf.int[1]
+#     ci.ub <- resp$conf.int[2]
+#     
+#     results.improv[idx,] <- list(comparison, estimate, ci.lb, ci.ub, p.value)
+#     
+#     # Building time
+#     resp <- t.test(data.mm1$NORM.TIME, data.mm2$NORM.TIME,
+#                    alternative = "two.sided",
+#                    mu = 0,
+#                    paired = TRUE,
+#                    var.equal = FALSE,
+#                    conf.level = 1.0 - alpha)
+#     
+#     comparison <- paste(mm1, "vs", mm2)
+#     p.value <- resp$p.value
+#     estimate <- resp$estimate
+#     ci.lb <- resp$conf.int[1]
+#     ci.ub <- resp$conf.int[2]
+#     
+#     results.time[idx,] <- list(comparison, estimate, ci.lb, ci.ub, p.value)
+#     
+#     # Increment counter
+#     idx <- idx + 1
+#   }
+# }
+# 
+# # Plot of confidence intervals (improvement)
+# results.improv$COMPARISON <- as.factor(results.improv$COMPARISON)
+# fig <- ggplot2::ggplot(results.improv, 
+#                        ggplot2::aes(x = COMPARISON, y = ESTIMATE, ymin = CI.LB, ymax = CI.UB)) +
+#   ggplot2::geom_hline(yintercept = 0, size = 1.3, col = 2, linetype = 2) +
+#   ggplot2::geom_pointrange(fatten = 2, size = 1.3) +
+#   ggplot2::coord_flip() +
+#   ggplot2::xlab("Comparison") +
+#   ggplot2::ylab("Mean difference in percentage improvement") +
+#   ggplot2::theme(text = element_text(size = 24),
+#                  legend.position = "none",
+#                  panel.background = ggplot2::element_blank(),
+#                  panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = 1))
+# 
+# filename = "./figures/ci-improv.pdf"
+# ggplot2::ggsave(filename, plot=fig, width=10, height=7)
+# 
+# # Plot (time)
+# results.time$COMPARISON <- as.factor(results.time$COMPARISON)
+# fig <- ggplot2::ggplot(results.time, 
+#                        ggplot2::aes(x = COMPARISON, y = ESTIMATE, ymin = CI.LB, ymax = CI.UB)) +
+#   ggplot2::geom_hline(yintercept = 0, size = 1.3, col = 2, linetype = 2) +
+#   ggplot2::geom_pointrange(fatten = 2, size = 1.3) +
+#   ggplot2::coord_flip() +
+#   ggplot2::xlab("Comparison") +
+#   ggplot2::ylab("Mean difference in normalized building time") +
+#   ggplot2::theme(text = element_text(size = 24),
+#                  legend.position = "none",
+#                  panel.background = ggplot2::element_blank(),
+#                  panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = 1))
+# 
+# filename = "./figures/ci-time.pdf"
+# ggplot2::ggsave(filename, plot=fig, width=10, height=7)
+
+
 # ==============================================================================
 # Convergence
 
@@ -286,6 +367,13 @@ de.results["METAMODEL.TIME.S"] = numeric()
 de.results["TOTAL.TIME.S"] = numeric()
 
 aggdata <- union(mm.results, de.results)
+
+# Remove repeated and problems and umbalanced data
+aggdata <- aggdata %>%
+  dplyr::filter(!(PROB %in% c('schwefel', 'trid', 'sumsqu'))) %>%
+  dplyr::filter(!(PROB == 'zakharov' & NVAR == 20 & REP == 4))
+
+aggdata$PROB <- factor(aggdata$PROB, unique(aggdata$PROB))
 
 # Change metamodel names
 aggdata$METAMODEL <- as.factor(aggdata$METAMODEL)
@@ -301,12 +389,6 @@ aggdata <- aggdata %>%
   dplyr::group_by(PROB, NVAR, METAMODEL, REP) %>%
   dplyr::mutate(IMPROV.OBJ = 100 * ((max(BEST.OBJ) - BEST.OBJ) / max(BEST.OBJ))) %>%
   dplyr::ungroup()
-
-# Remove repeated and problems with error
-aggdata <- aggdata %>%
-  dplyr::filter(!(PROB %in% c('schwefel', 'trid', 'sumsqu')))
-
-aggdata$PROB <- factor(aggdata$PROB, unique(aggdata$PROB))
 
 # Process data
 aggdata <- aggdata %>%
