@@ -10,6 +10,7 @@ rm(list = ls())
 dependencies.list <- c(
   "dplyr",
   "ggplot2",
+  "ggforce",
   "xtable",
   "PMCMR"
 )
@@ -32,6 +33,7 @@ if (length(dependencies.missing) > 0) {
 
 suppressMessages(library(dplyr))
 suppressMessages(library(ggplot2))
+suppressMessages(library(ggforce))
 suppressMessages(library(xtable))
 suppressMessages(library(PMCMR))
 
@@ -58,7 +60,7 @@ metamodel.factors <- list(OK  = "ordinary-kriging",
 
 levels(data.results$METAMODEL) <- metamodel.factors
 
-# Compute objective function improvement
+# Compute percentual improvent in objective function (best initial solution is used as reference)
 data.results <- data.results %>%
   dplyr::group_by(PROB, NVAR, METAMODEL, REP) %>%
   dplyr::mutate(IMPROV.OBJ = 100 * ((max(BEST.OBJ) - BEST.OBJ) / max(BEST.OBJ))) %>%
@@ -91,7 +93,7 @@ aggdata <- data.results %>%
   dplyr::group_by(PROB, NVAR, METAMODEL, REP, GROUP) %>%
   dplyr::filter(PROGRESS == max(PROGRESS))
 
-# Plot data
+# Plot data for each pair problem/size
 for (prob in unique(aggdata$PROB)) {
   for (nvar in unique(aggdata$NVAR)) {
     fig <- ggplot2::ggplot(subset(subset(aggdata, PROB==prob), NVAR==nvar), 
@@ -112,7 +114,7 @@ for (prob in unique(aggdata$PROB)) {
 
 
 # ==============================================================================
-# Crossbar
+# Crossbar (overall result)
 
 # Pre-process data
 aggdata <- data.results %>%
@@ -151,10 +153,59 @@ fig <- ggplot2::ggplot(aggdata,
   ggplot2::scale_color_discrete(name = "Metamodel: ") +
   ggplot2::theme(legend.position="bottom",
                  legend.direction = "horizontal",
-                 text = element_text(size = 20))
+                 text = element_text(size = 20)) + 
+  ggforce::facet_zoom(x = METAMODEL %in% c("RBF", "OK", "UK1", "UK2"), zoom.size = 1, show.area = TRUE, shrink = TRUE)
 
 filename = "./figures/crossbar.pdf"
 ggplot2::ggsave(filename, plot=fig, width=10, height=7)
+
+
+# ==============================================================================
+# Crossbar (for each problem function)
+
+# Pre-process data
+aggdata <- data.results %>%
+
+  # Normalized metamodel building time
+  dplyr::group_by(PROB, NVAR, REP, METAMODEL) %>%
+  dplyr::mutate(BUILD.TIME = mean(METAMODEL.TIME.S)) %>%
+  dplyr::group_by(PROB, NVAR, REP) %>%
+  dplyr::mutate(NORM.TIME = BUILD.TIME / max(BUILD.TIME)) %>%
+
+  # Keep data from the last iteration
+  dplyr::group_by(PROB, NVAR, REP, METAMODEL) %>%
+  dplyr::filter(ITER == max(ITER)) %>%
+
+  # Summarise results
+  dplyr::group_by(PROB, METAMODEL) %>%
+  dplyr::summarise(MEAN.IMPROV = mean(IMPROV.OBJ),
+                   SE.IMPROV = sd(IMPROV.OBJ) / sqrt(n()),
+                   MEAN.TIME = mean(NORM.TIME),
+                   SE.TIME = sd(NORM.TIME) / sqrt(n()))
+
+# Plot data
+for (prob in unique(aggdata$PROB)) {
+  fig <- ggplot2::ggplot(subset(aggdata, PROB == prob),
+                         ggplot2::aes(x    = MEAN.TIME,
+                                      xmin = MEAN.TIME - SE.TIME,
+                                      xmax = MEAN.TIME + SE.TIME,
+                                      y    = MEAN.IMPROV,
+                                      ymin = MEAN.IMPROV - SE.IMPROV,
+                                      ymax = MEAN.IMPROV + SE.IMPROV,
+                                      colour = METAMODEL)) +
+    ggplot2::geom_point(shape = 22, size = 3) +
+    ggplot2::geom_errorbarh(height = 0, size = 0.75) +
+    ggplot2::geom_errorbar(width = 0, size = 0.75) +
+    ggplot2::xlab("Model building runtime (normalized)") +
+    ggplot2::ylab("Mean improv. over the best initial solution (%)") +
+    ggplot2::scale_color_discrete(name = "Metamodel: ") +
+    ggplot2::theme(legend.position="bottom",
+                   legend.direction = "horizontal",
+                   text = element_text(size = 20))
+
+  filename = paste("./figures/crossbar-by-problem/crossbar_", as.character(prob), ".pdf", sep="")
+  ggplot2::ggsave(filename, plot=fig, width=10, height=7)
+}
 
 
 # ==============================================================================
@@ -514,4 +565,36 @@ table.results <- with(aggdata,
                             UK2 = aggdata$STD.TIME[aggdata$METAMODEL == "UK2"],
                             BK = aggdata$STD.TIME[aggdata$METAMODEL == "BK"],
                             RBF = aggdata$STD.TIME[aggdata$METAMODEL == "RBF"]))
+xtable(table.results, digits = c(6,0,4,4,4,4,4))
+####################################################################################
+# ===========================================================================
+# Tables: Best value of objective function
+
+# Pre-process data
+aggdata <- data.results %>%
+  dplyr::filter(!(PROB %in% c('schwefel', 'trid', 'sumsqu','perm0db'))) %>%
+  dplyr::group_by(PROB, NVAR, METAMODEL, REP) %>%
+  dplyr::filter(ITER == max(ITER)) %>%
+  dplyr::group_by(NVAR, METAMODEL) %>%
+  dplyr::summarise(MEAN.BEST.OBJ = mean(BEST.OBJ), 
+                   STD.BEST.OBJ = sd(BEST.OBJ))
+
+# Mean
+table.results <- with(aggdata,
+                      cbind(NVAR = aggdata$NVAR[aggdata$METAMODEL == "OK"],
+                            OK = aggdata$MEAN.BEST.OBJ[aggdata$METAMODEL == "OK"],
+                            UK1 = aggdata$MEAN.BEST.OBJ[aggdata$METAMODEL == "UK1"],
+                            UK2 = aggdata$MEAN.BEST.OBJ[aggdata$METAMODEL == "UK2"],
+                            BK = aggdata$MEAN.BEST.OBJ[aggdata$METAMODEL == "BK"],
+                            RBF = aggdata$MEAN.BEST.OBJ[aggdata$METAMODEL == "RBF"]))
+xtable(table.results, digits = c(6,0,4,4,4,4,4))
+
+# Standard deviation
+table.results <- with(aggdata,
+                      cbind(NVAR = aggdata$NVAR[aggdata$METAMODEL == "OK"],
+                            OK = aggdata$STD.BEST.OBJ[aggdata$METAMODEL == "OK"],
+                            UK1 = aggdata$STD.BEST.OBJ[aggdata$METAMODEL == "UK1"],
+                            UK2 = aggdata$STD.BEST.OBJ[aggdata$METAMODEL == "UK2"],
+                            BK = aggdata$STD.BEST.OBJ[aggdata$METAMODEL == "BK"],
+                            RBF = aggdata$STD.BEST.OBJ[aggdata$METAMODEL == "RBF"]))
 xtable(table.results, digits = c(6,0,4,4,4,4,4))
